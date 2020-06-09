@@ -42,11 +42,11 @@ function editStates() {
     const el = ev.target, cl = el.classList, line = el.parentNode, state = +line.dataset.id;
     if (cl.contains("fillRect")) stateChangeFill(el); else
     if (cl.contains("name")) editStateName(state); else
-    if (cl.contains("icon-fleur")) stateOpenCOA(ev, state); else
+    if (cl.contains("icon-coa")) stateOpenCOA(ev, state); else
     if (cl.contains("icon-star-empty")) stateCapitalZoomIn(state); else
     if (cl.contains("culturePopulation")) changePopulation(state); else
     if (cl.contains("icon-pin")) focusOnState(state, cl); else
-    if (cl.contains("icon-trash-empty")) stateRemove(state);
+    if (cl.contains("icon-trash-empty")) stateRemovePrompt(state);
   });
 
   body.addEventListener("input", function(ev) {
@@ -90,7 +90,7 @@ function editStates() {
         data-population=${population} data-burgs=${s.burgs} data-color="" data-form="" data-capital="" data-culture="" data-type="" data-expansionism="">
           <svg width="9" height="9" class="placeholder"></svg>
           <input data-tip="Neutral lands name. Click to change" class="stateName name pointer italic" value="${s.name}" readonly>
-          <span class="icon-fleur placeholder hide"></span>
+          <span class="icon-coa placeholder hide"></span>
           <input class="stateForm placeholder" value="none">
           <span class="icon-star-empty placeholder hide"></span>
           <input class="stateCapital placeholder hide">
@@ -114,7 +114,7 @@ function editStates() {
         data-area=${area} data-population=${population} data-burgs=${s.burgs} data-culture=${pack.cultures[s.culture].name} data-type=${s.type} data-expansionism=${s.expansionism}>
         <svg data-tip="State fill style. Click to change" width=".9em" height=".9em" style="margin-bottom:-1px"><rect x="0" y="0" width="100%" height="100%" fill="${s.color}" class="fillRect pointer"></svg>
         <input data-tip="State name. Click to change" class="stateName name pointer" value="${s.name}" readonly>
-        <span data-tip="Click to open state COA in the Iron Arachne Heraldry Generator. Ctrl + click to change the seed" class="icon-fleur pointer hide"></span>
+        <span data-tip="Click to open state COA in the Iron Arachne Heraldry Generator. Ctrl + click to change the seed" class="icon-coa pointer hide"></span>
         <input data-tip="State form name. Click to change" class="stateForm name pointer" value="${s.formName}" readonly>
         <span data-tip="State capital. Click to zoom into view" class="icon-star-empty pointer hide"></span>
         <input data-tip="Capital name. Click and type to rename" class="stateCapital hide" value="${capital}" autocorrect="off" spellcheck="false"/>
@@ -173,30 +173,20 @@ function editStates() {
     if (!layerIsOn("toggleStates")) return;
     const state = +event.target.dataset.id;
     if (customization || !state) return;
-    const path = statesBody.select("#state"+state).attr("d");
-    debug.append("path").attr("class", "highlight").attr("d", path)
+    const d = regions.select("#state"+state).attr("d");
+
+    const path = debug.append("path").attr("class", "highlight").attr("d", d)
       .attr("fill", "none").attr("stroke", "red").attr("stroke-width", 1).attr("opacity", 1)
-      .attr("filter", "url(#blur1)").call(transition);
-  }
+      .attr("filter", "url(#blur1)");
 
-  function transition(path) {
-    const duration = (path.node().getTotalLength() + 5000) / 2;
-    path.transition().duration(duration).attrTween("stroke-dasharray", tweenDash);
-  }
-
-  function tweenDash() {
-    const l = this.getTotalLength();
+    const l = path.node().getTotalLength(), dur = (l + 5000) / 2;
     const i = d3.interpolateString("0," + l, l + "," + l);
-    return t => i(t);
-  }
-  
-  function removePath(path) {
-    path.transition().duration(1000).attr("opacity", 0).remove();
+    path.transition().duration(dur).attrTween("stroke-dasharray", function() {return t => i(t)});
   }
 
-  function stateHighlightOff() {
-    debug.selectAll(".highlight").each(function(el) {
-      d3.select(this).call(removePath);
+  function stateHighlightOff(event) {
+    debug.selectAll(".highlight").each(function() {
+      d3.select(this).transition().duration(1000).attr("opacity", 0).remove();
     });
   }
 
@@ -217,6 +207,15 @@ function editStates() {
   }
 
   function editStateName(state) {
+
+    //Reset input value and close add mode
+    stateNameEditorCustomForm.value = "";
+    const addModeActive = stateNameEditorCustomForm.style.display === "inline-block";
+    if (addModeActive) {
+      stateNameEditorCustomForm.style.display = "none";
+      stateNameEditorSelectForm.style.display = "inline-block";
+    }
+
     const s = pack.states[state];
     document.getElementById("stateNameEditor").dataset.state = state;
     document.getElementById("stateNameEditorShort").value = s.name || "";
@@ -254,10 +253,11 @@ function editStates() {
 
     function addCustomForm() {
       const value = stateNameEditorCustomForm.value;
-      const displayed = stateNameEditorCustomForm.style.display === "inline-block";
-      stateNameEditorCustomForm.style.display = displayed ? "none" : "inline-block";
-      stateNameEditorSelectForm.style.display = displayed ? "inline-block" : "none";
-      if (displayed) applyOption(stateNameEditorSelectForm, value);
+      const addModeActive = stateNameEditorCustomForm.style.display === "inline-block";
+      stateNameEditorCustomForm.style.display = addModeActive ? "none" : "inline-block";
+      stateNameEditorSelectForm.style.display = addModeActive ? "inline-block" : "none";
+      if (addModeActive) applyOption(stateNameEditorSelectForm, value);
+      stateNameEditorCustomForm.value = "";
     }
 
     function regenerateFullName() {
@@ -307,15 +307,15 @@ function editStates() {
 
   function stateOpenCOA(event, state) {
     const defSeed = `${seed}-s${state}`;
+    const openIAHG = () => openURL("https://ironarachne.com/heraldry/" + (pack.states[state].IAHG || defSeed));
 
-    if (event.ctrlKey) {
-      const newSeed = prompt(`Please provide an Iron Arachne Heraldry Generator seed. `+ 
-        `Default seed is a combination of FMG map seed and province id (${defSeed})`, pack.states[state].IAHG || defSeed);
-      if (newSeed && newSeed != defSeed) pack.states[state].IAHG = newSeed; else return;
-    }
-
-    const s = pack.states[state].IAHG || defSeed;
-    openURL("https://ironarachne.com/heraldry/" + s);
+    if (isCtrlClick(event)) {
+      prompt(`Please provide an Iron Arachne Heraldry Generator seed. <br>Default seed is a combination of FMG map seed and state id (${defSeed})`, 
+      {default:pack.states[state].IAHG || defSeed}, v => {
+        if (v && v != defSeed) pack.states[state].IAHG = v;
+        openIAHG();
+      });
+    } else openIAHG();
   }
 
   function changePopulation(state) {
@@ -421,8 +421,22 @@ function editStates() {
     if (!defs.selectAll("#fog path").size()) fogging.style("display", "none"); // all items are de-focused
   }
 
-  function stateRemove(state) {
+  function stateRemovePrompt(state) {
     if (customization) return;
+
+    alertMessage.innerHTML = "Are you sure you want to remove the state? <br>This action cannot be reverted";
+    $("#alert").dialog({resizable: false, title: "Remove state",
+      buttons: {
+        Remove: function() {
+          $(this).dialog("close");
+          stateRemove(state);
+        },
+        Cancel: function() {$(this).dialog("close");}
+      }
+    });
+  }
+
+  function stateRemove(state) {
     statesBody.select("#state"+state).remove();
     statesBody.select("#state-gap"+state).remove();
     statesHalo.select("#state-border"+state).remove();
@@ -860,7 +874,7 @@ function editStates() {
       cells.state[c] = newState;
       cells.province[c] = 0;
     });
-    states.push({i:newState, name, diplomacy, provinces:[], color, expansionism:.5, capital:burg, type:"Generic", center, culture});
+    states.push({i:newState, name, diplomacy, provinces:[], color, expansionism:.5, capital:burg, type:"Generic", center, culture, military:[], alert:1});
     BurgsAndStates.collectStatistics();
     BurgsAndStates.defineStateForms([newState]);
     adjustProvinces([...new Set(affectedProvinces)]);
@@ -882,12 +896,13 @@ function editStates() {
   
   function downloadStatesData() {
     const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
-    let data = "Id,State,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area "+unit+",Total Population,Rural Population,Urban Population\n"; // headers
+    let data = "Id,State,Form,Color,Capital,Culture,Type,Expansionism,Cells,Burgs,Area "+unit+",Total Population,Rural Population,Urban Population\n"; // headers
 
     body.querySelectorAll(":scope > div").forEach(function(el) {
       const key = parseInt(el.dataset.id);
       data += el.dataset.id + ",";
       data += el.dataset.name + ",";
+      data += el.dataset.form + ",";
       data += el.dataset.color + ",";
       data += el.dataset.capital + ",";
       data += el.dataset.culture + ",";

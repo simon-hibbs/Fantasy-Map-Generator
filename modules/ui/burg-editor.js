@@ -15,7 +15,7 @@ function editBurg(id) {
   const of = id ? "svg" : d3.event.target;
 
   $("#burgEditor").dialog({
-    title: "Edit Burg", resizable: false, close: closeBurgEditor, 
+    title: "Edit Burg", resizable: false, close: closeBurgEditor,
     position: {my, at, of, collision: "fit"}
   });
 
@@ -56,19 +56,19 @@ function editBurg(id) {
     document.getElementById("burgEditAnchorStyle").style.display = +b.port ? "inline-block" : "none";
 
     // toggle features
-    if (b.capital) document.getElementById("burgCapital").classList.remove("inactive"); 
+    if (b.capital) document.getElementById("burgCapital").classList.remove("inactive");
     else document.getElementById("burgCapital").classList.add("inactive");
-    if (b.port) document.getElementById("burgPort").classList.remove("inactive"); 
+    if (b.port) document.getElementById("burgPort").classList.remove("inactive");
     else document.getElementById("burgPort").classList.add("inactive");
-    if (b.citadel) document.getElementById("burgCitadel").classList.remove("inactive"); 
+    if (b.citadel) document.getElementById("burgCitadel").classList.remove("inactive");
     else document.getElementById("burgCitadel").classList.add("inactive");
-    if (b.walls) document.getElementById("burgWalls").classList.remove("inactive"); 
+    if (b.walls) document.getElementById("burgWalls").classList.remove("inactive");
     else document.getElementById("burgWalls").classList.add("inactive");
-    if (b.plaza) document.getElementById("burgPlaza").classList.remove("inactive"); 
+    if (b.plaza) document.getElementById("burgPlaza").classList.remove("inactive");
     else document.getElementById("burgPlaza").classList.add("inactive");
-    if (b.temple) document.getElementById("burgTemple").classList.remove("inactive"); 
+    if (b.temple) document.getElementById("burgTemple").classList.remove("inactive");
     else document.getElementById("burgTemple").classList.add("inactive");
-    if (b.shanty) document.getElementById("burgShanty").classList.remove("inactive"); 
+    if (b.shanty) document.getElementById("burgShanty").classList.remove("inactive");
     else document.getElementById("burgShanty").classList.add("inactive");
 
     // select group
@@ -102,7 +102,7 @@ function editBurg(id) {
     document.getElementById("burgGroupSection").style.display = "none";
     document.getElementById("burgInputGroup").style.display = "none";
     document.getElementById("burgInputGroup").value = "";
-    document.getElementById("burgSelectGroup").style.display = "inline-block"; 
+    document.getElementById("burgSelectGroup").style.display = "inline-block";
   }
 
   function changeGroup() {
@@ -187,7 +187,7 @@ function editBurg(id) {
     const burgsToRemove = burgsInGroup.filter(b => !pack.burgs[b].capital);
     const capital = burgsToRemove.length < burgsInGroup.length;
 
-    alertMessage.innerHTML = `Are you sure you want to remove 
+    alertMessage.innerHTML = `Are you sure you want to remove
       ${basic || capital ? "all elements in the group" : "the entire burg group"}?
       <br>Please note that capital burgs will not be deleted.
       <br><br>Burgs to be removed: ${burgsToRemove.length}`;
@@ -243,7 +243,7 @@ function editBurg(id) {
     const b = pack.burgs[id];
     const feature = this.dataset.feature;
     const turnOn = this.classList.contains("inactive");
-    if (feature === "port") togglePort(id); 
+    if (feature === "port") togglePort(id);
     else if(feature === "capital") toggleCapital(id);
     else b[feature] = +turnOn;
     if (b[feature]) this.classList.remove("inactive");
@@ -281,47 +281,51 @@ function editBurg(id) {
   function openInMFCG(event) {
     const id = elSelected.attr("data-id");
     const burg = pack.burgs[id];
-    const defSeed = seed + id.padStart(4, 0);
+    const defSeed = +(seed + id.padStart(4, 0));
+    if (isCtrlClick(event)) {
+      prompt(`Please provide a Medieval Fantasy City Generator seed. 
+        Seed should be a number. Default seed is FMG map seed + burg id padded to 4 chars with zeros (${defSeed}). 
+        Please note that if seed is custom, "Overworld" button from MFCG will open a different map`,
+        {default:burg.MFCG||defSeed, step:1, min:1, max:1e13-1}, v => {
+        burg.MFCG = v;
+        openMFCG(v);
+      });
+    } else openMFCG();
 
-    if (event.ctrlKey) {
-      const newSeed = prompt(`Please provide a Medieval Fantasy City Generator seed. `+ 
-        `Seed should be a number. Default seed is FMG map seed + burg id padded to 4 chars with zeros (${defSeed}). `+
-        `Please note that if seed is custom, "Overworld" button from MFCG will open a different map`, burg.MFCG || defSeed);
-      if (newSeed) burg.MFCG = newSeed; else return;
+    function openMFCG(seed) {
+      if (!seed && burg.MFCGlink) {openURL(burg.MFCGlink); return;}
+      const name = elSelected.text();
+      const size = Math.max(Math.min(rn(burg.population), 65), 6);
+  
+      const s = burg.MFCG || defSeed;
+      const cell = burg.cell;
+      const hub = +pack.cells.road[cell] > 50;
+      const river = pack.cells.r[cell] ? 1 : 0;
+  
+      const coast = +burg.port;
+      const citadel = +burg.citadel;
+      const walls = +burg.walls;
+      const plaza = +burg.plaza;
+      const temple = +burg.temple;
+      const shanty = +burg.shanty;
+
+      const site = "http://fantasycities.watabou.ru/";
+      const url = `${site}?name=${name}&size=${size}&seed=${s}&hub=${hub}&random=0&continuous=0&river=${river}&coast=${coast}&citadel=${citadel}&plaza=${plaza}&temple=${temple}&walls=${walls}&shantytown=${shanty}`;
+      openURL(url);
     }
-
-    const name = elSelected.text();
-    const size = Math.max(Math.min(rn(burg.population), 65), 6);
-
-    const s = burg.MFCG || defSeed;
-    const cell = burg.cell;
-    const hub = +pack.cells.road[cell] > 50;
-    const river = pack.cells.r[cell] ? 1 : 0;
-
-    const coast = +burg.port;
-    const citadel = +burg.citadel;
-    const walls = +burg.walls;
-    const plaza = +burg.plaza;
-    const temple = +burg.temple;
-    const shanty = +burg.shanty;
-
-    const url = `http://fantasycities.watabou.ru/?name=${name}&size=${size}&seed=${s}&hub=${hub}&random=0&continuous=0&river=${river}&coast=${coast}&citadel=${citadel}&plaza=${plaza}&temple=${temple}&walls=${walls}&shantytown=${shanty}`;
-    openURL(url);
   }
 
   function openInIAHG(event) {
-    const id = elSelected.attr("data-id");
-    const burg = pack.burgs[id];
-    const defSeed = `${seed}-b${id}`;
+    const id = elSelected.attr("data-id"), burg = pack.burgs[id], defSeed = `${seed}-b${id}`;
+    const openIAHG = () => openURL("https://ironarachne.com/heraldry/" + (burg.IAHG || defSeed));
 
-    if (event.ctrlKey) {
-      const newSeed = prompt(`Please provide an Iron Arachne Heraldry Generator seed. `+ 
-        `Default seed is a combination of FMG map seed and burg id (${defSeed})`, burg.IAHG || defSeed);
-      if (newSeed) burg.IAHG = newSeed; else return;
-    }
-
-    const s = burg.IAHG || defSeed;
-    openURL("https://ironarachne.com/heraldry/" + s);
+    if (isCtrlClick(event)) {
+      prompt(`Please provide an Iron Arachne Heraldry Generator seed. <br>Default seed is a combination of FMG map seed and burg id (${defSeed})`, 
+      {default:burg.IAHG || defSeed}, v => {
+        if (v && v != defSeed) burg.IAHG = v;
+        openIAHG();
+      });
+    } else openIAHG();
   }
 
   function toggleRelocateBurg() {

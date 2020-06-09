@@ -5,9 +5,9 @@
 }(this, (function () {'use strict';
 
   // name generation approach and relative chance to be selected
-  const approach = {"Number":1, "Being":3, "Adjective":5, "Color + Animal":5, 
-    "Adjective + Animal":5, "Adjective + Being":5, "Adjective + Genitive":1, 
-    "Color + Being":3, "Color + Genitive":3, "Being + of + Genitive":2, "Being + of the + Genitive":1, 
+  const approach = {"Number":1, "Being":3, "Adjective":5, "Color + Animal":5,
+    "Adjective + Animal":5, "Adjective + Being":5, "Adjective + Genitive":1,
+    "Color + Being":3, "Color + Genitive":3, "Being + of + Genitive":2, "Being + of the + Genitive":1,
     "Animal + of + Genitive":1, "Adjective + Being + of + Genitive":2, "Adjective + Animal + of + Genitive":2};
 
   // turn weighted array into simple array
@@ -21,7 +21,7 @@
   const base = {
     number: ["One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve"],
     being: ["God", "Goddess", "Lord", "Lady", "Deity", "Creator", "Maker", "Overlord", "Ruler", "Chief", "Master", "Spirit", "Ancestor", "Father", "Forebear", "Forefather", "Mother", "Brother", "Sister", "Elder", "Numen", "Ancient", "Virgin", "Giver", "Council", "Guardian", "Reaper"],
-    animal: ["Antelope", "Ape", "Badger", "Bear", "Beaver", "Bison", "Boar", "Buffalo", "Cat", "Cobra", "Crane", "Crocodile", "Crow", "Deer", "Dog", "Eagle", "Elk", "Fox", "Goat", "Goose", "Hare", "Hawk", "Heron", "Horse", "Hyena", "Ibis", "Jackal", "Jaguar", "Lark", "Leopard", "Lion", "Mantis", "Marten", "Moose", "Mule", "Narwhal", "Owl", "Panther", "Rat", "Raven", "Rook", "Scorpion", "Shark", "Sheep", "Snake", "Spider", "Swan", "Tiger", "Turtle", "Viper", "Vulture", "Walrus", "Wolf", "Wolverine", "Worm",  "Camel", "Falcon", "Hound", "Ox", "Serpent"],
+    animal: ["Dragon", "Wyvern", "Phoenix", "Unicorn", "Sphinx", "Centaur", "Pegasus", "Kraken", "Basilisk", "Chimera", "Cyclope", "Antelope", "Ape", "Badger", "Bear", "Beaver", "Bison", "Boar", "Buffalo", "Cat", "Cobra", "Crane", "Crocodile", "Crow", "Deer", "Dog", "Eagle", "Elk", "Fox", "Goat", "Goose", "Hare", "Hawk", "Heron", "Horse", "Hyena", "Ibis", "Jackal", "Jaguar", "Lark", "Leopard", "Lion", "Mantis", "Marten", "Moose", "Mule", "Narwhal", "Owl", "Panther", "Rat", "Raven", "Rook", "Scorpion", "Shark", "Sheep", "Snake", "Spider", "Swan", "Tiger", "Turtle", "Viper", "Vulture", "Walrus", "Wolf", "Wolverine", "Worm",  "Camel", "Falcon", "Hound", "Ox", "Serpent"],
     adjective: ["New", "Good", "High", "Old", "Great", "Big", "Young", "Major", "Strong", "Happy", "Last", "Main", "Huge", "Far", "Beautiful", "Wild", "Fair", "Prime", "Crazy", "Ancient", "Proud", "Secret", "Lucky", "Sad", "Silent", "Latter", "Severe", "Fat", "Holy", "Pure", "Aggressive", "Honest", "Giant", "Mad", "Pregnant", "Distant", "Lost", "Broken", "Blind", "Friendly", "Unknown", "Sleeping", "Slumbering", "Loud", "Hungry", "Wise", "Worried", "Sacred", "Magical", "Superior", "Patient", "Dead", "Deadly", "Peaceful", "Grateful", "Frozen", "Evil", "Scary", "Burning", "Divine", "Bloody", "Dying", "Waking", "Brutal", "Unhappy", "Calm", "Cruel", "Favorable", "Blond", "Explicit", "Disturbing", "Devastating", "Brave", "Sunny", "Troubled", "Flying", "Sustainable", "Marine", "Fatal", "Inherent", "Selected", "Naval", "Cheerful", "Almighty", "Benevolent", "Eternal", "Immutable", "Infallible"],
     genitive: ["Day", "Life", "Death", "Night", "Home", "Fog", "Snow", "Winter", "Summer", "Cold", "Springs", "Gates", "Nature", "Thunder", "Lightning", "War", "Ice", "Frost", "Fire", "Doom", "Fate", "Pain", "Heaven", "Justice", "Light", "Love", "Time", "Victory"],
     theGenitive: ["World", "Word", "South", "West", "North", "East", "Sun", "Moon", "Peak", "Fall", "Dawn", "Eclipse", "Abyss", "Blood", "Tree", "Earth", "Harvest", "Rainbow", "Sea", "Sky", "Stars", "Storm", "Underworld", "Wild"],
@@ -237,7 +237,7 @@
     religions.filter(r => r.type === "Heresy").forEach(r => {
       const b = cells.religion[r.center]; // "base" religion id
       cells.religion[r.center] = r.i; // heresy id
-      queue.queue({e:r.center, p:0, r:r.i, b}); 
+      queue.queue({e:r.center, p:0, r:r.i, b});
       cost[r.center] = 1;
     });
 
@@ -308,10 +308,10 @@
     if (a === "Adjective + Being") return ra(base.adjective) + " " + ra(base.being);
     if (a === "Adjective + Genitive") return ra(base.adjective) + " " + ra(base.genitive);
     if (a === "Color + Being") return ra(base.color) + " " + ra(base.being);
-    if (a === "Color + Genitive") return ra(base.color) + " " + ra(base.genitive); 
+    if (a === "Color + Genitive") return ra(base.color) + " " + ra(base.genitive);
     if (a === "Being + of + Genitive") return ra(base.being) + " of " + ra(base.genitive);
     if (a === "Being + of the + Genitive") return ra(base.being) + " of the " + ra(base.theGenitive);
-    if (a === "Animal + of + Genitive") return ra(base.animal) + " of " + ra(base.genitive); 
+    if (a === "Animal + of + Genitive") return ra(base.animal) + " of " + ra(base.genitive);
     if (a === "Adjective + Being + of + Genitive") return ra(base.adjective) + " " + ra(base.being) + " of " + ra(base.genitive);
     if (a === "Adjective + Animal + of + Genitive") return ra(base.adjective) + " " + ra(base.animal) + " of " + ra(base.genitive);
   }

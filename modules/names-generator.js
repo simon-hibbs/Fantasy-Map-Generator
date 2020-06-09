@@ -7,9 +7,9 @@
   let chains = [];
 
   // calculate Markov chain for a namesbase
-  const calculateChain = function(b) {
+  const calculateChain = function(string) {
     const chain = [];
-    const d = nameBases[b].b.toLowerCase().replace(/,/g, " ");
+    const d = string.toLowerCase().replace(/,/g, " ");
 
     for (let i = -1, str = ""; i < d.length - 2; i += str.length, str = "") {
       let v = 0, f = " ";
@@ -33,7 +33,7 @@
   }
 
   // update chain for specific base
-  const updateChain = (i) => chains[i] = nameBases[i] || nameBases[i].b ? calculateChain(i) : null;
+  const updateChain = (i) => chains[i] = nameBases[i] || nameBases[i].b ? calculateChain(nameBases[i].b) : null;
 
   // update chains for all used bases
   const clearChains = () => chains = [];
@@ -45,8 +45,8 @@
 
     const data = chains[base];
     if (!data || data[" "] === undefined) {
-      tip("Namesbase " + base + " is incorrect. Please check in namesbase editor", false, "error"); 
-      console.error("Namebase " + base + " is incorrect!"); 
+      tip("Namesbase " + base + " is incorrect. Please check in namesbase editor", false, "error");
+      console.error("Namebase " + base + " is incorrect!");
       return "ERROR";
     }
 
@@ -67,7 +67,7 @@
           cur = "";
           v = data[" "];
         } else {
-          v = data[cur.slice(-1)];
+          v = data[cur.slice(-1)] || data[" "];
         }
       }
 
@@ -76,6 +76,9 @@
     }
 
     // parse word to get a final name
+    const l = last(w); // last letter
+    if (l === "'" || l === " ") w = w.slice(0,-1); // not allow apostrophe and space at the end
+
     let name = [...w].reduce(function(r, c, i, d) {
       if (c === d[i+1] && !dupl.includes(c)) return r; // duplication is not allowed
       if (!r.length) return c.toUpperCase();
@@ -83,8 +86,7 @@
       if (r.slice(-1) === " ") return r + c.toUpperCase(); // capitalize letter after space
       if (r.slice(-1) === "-") return r + c.toUpperCase(); // capitalize letter after hyphen
       if (c === "a" && d[i+1] === "e") return r; // "ae" => "e"
-      if (c === " " && i+1 === d.length) return r;
-      if (i+2 < d.length && !vowel(c) && !vowel(d[i+1]) && !vowel(d[i+2])) return r; // remove consonant before 2 consonants
+      if (i+1 < d.length && !vowel(c) && !vowel(d[i-1]) && !vowel(d[i+1])) return r; // remove consonant between 2 consonants
       if (i+2 < d.length && c === d[i+1] && c === d[i+2]) return r; // remove tree same letters in a row
       return r + c;
     }, "");
@@ -96,6 +98,7 @@
       console.error("Name is too short! Random name to be selected");
       name = ra(nameBases[base].b.split(","));
     }
+
     return name;
   }
 
@@ -115,8 +118,7 @@
   // generate short name for base
   const getBaseShort = function(base) {
     if (nameBases[base] === undefined) {
-      tip(`Namebase for culture ${pack.cultures[culture].name} does not exist. 
-        Please upload custom namebases of change the base in Cultures Editor`, false, "error");
+      tip(`Namebase ${base} does not exist. Please upload custom namebases of change the base in Cultures Editor`, false, "error");
       base = 1;
     }
     const min = nameBases[base].min-1;
@@ -148,7 +150,7 @@
       else if (P(.7)) name = name.slice(0,-1); // ~60% for cv
       else return name;
     } else if (P(.4)) return name; // 60% for cc and vc
-  
+
     // define suffix
     let suffix = "ia"; // standard suffix
 
@@ -202,7 +204,7 @@
     if (suffix === "land" && name.length > 6) name = name.slice(0, -(name.length-5));
     return validateSuffix(name, suffix);
   }
-  
+
   const getNameBases = function() {
     // name, min length, max length, letters to allow duplication, multi-word name rate
     return [
@@ -253,5 +255,5 @@
     ];
   }
 
-  return {getBase, getCulture, getCultureShort, getBaseShort, getState, updateChain, clearChains, getNameBases, getMapName};
+  return {getBase, getCulture, getCultureShort, getBaseShort, getState, updateChain, clearChains, getNameBases, getMapName, calculateChain};
 })));

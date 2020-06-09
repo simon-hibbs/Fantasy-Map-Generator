@@ -5,11 +5,11 @@
 }(this, (function () {'use strict';
 
 // set default options
-const options = {scale: 50, lightness: .7, shadow: .5, sun: {x: 100, y: 600, z: 1000}, rotateMesh: 0, rotateGlobe: .5, 
-  skyColor: "#9ecef5", waterColor: "#53679f", extendedWater: 0, resolution: 2};
+const options = {scale: 50, lightness: .7, shadow: .5, sun: {x: 100, y: 600, z: 1000}, rotateMesh: 0, rotateGlobe: .5,
+  skyColor: "#9ecef5", waterColor: "#466eab", extendedWater: 0, resolution: 2};
 
 // set variables
-let Renderer, scene, camera, controls, animationFrame, material, texture, 
+let Renderer, scene, camera, controls, animationFrame, material, texture,
   geometry, mesh, ambientLight, spotLight, waterPlane, waterMaterial, waterMesh;
 
 // initiate 3d scene
@@ -157,7 +157,7 @@ async function newMesh(canvas) {
   // controls
   controls = await OrbitControls(camera, canvas);
   controls.enableKeys = false;
-  controls.minDistance = 10; 
+  controls.minDistance = 10;
   controls.maxDistance = 1000;
   controls.maxPolarAngle = Math.PI/2;
   controls.autoRotate = Boolean(options.rotateMesh);
@@ -322,7 +322,7 @@ function loadTHREE() {
 }
 
 function OrbitControls(camera, domElement) {
-  if (THREE.OrbitControls) new THREE.OrbitControls(camera, domElement);
+  if (THREE.OrbitControls) return new THREE.OrbitControls(camera, domElement);
 
   return new Promise(resolve => {
     const script = document.createElement('script');

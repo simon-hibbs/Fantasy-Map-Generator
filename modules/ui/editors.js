@@ -17,7 +17,7 @@ function restoreDefaultEvents() {
 function clicked() {
   const el = d3.event.target;
   if (!el || !el.parentElement || !el.parentElement.parentElement) return;
-  const parent = el.parentElement, grand = parent.parentElement;
+  const parent = el.parentElement, grand = parent.parentElement, great = grand.parentElement;
   const p = d3.mouse(this);
   const i = findCell(p[0], p[1]);
 
@@ -27,8 +27,9 @@ function clicked() {
   else if (grand.id === "burgLabels") editBurg();
   else if (grand.id === "burgIcons") editBurg();
   else if (parent.id === "terrain") editReliefIcon();
-  else if (parent.id === "markers") editMarker(); 
+  else if (parent.id === "markers") editMarker();
   else if (grand.id === "coastline") editCoastline();
+  else if (great.id === "armies") editRegiment();
   else if (pack.cells.t[i] === 1) {
     const node = document.getElementById("island_"+pack.cells.f[i]);
     editCoastline(node);
@@ -171,9 +172,10 @@ function removeBurg(id) {
   if (label) label.remove();
   if (icon) icon.remove();
   if (anchor) anchor.remove();
-  pack.burgs[id].removed = true;
-  const cell = pack.burgs[id].cell;
-  pack.cells.burg[cell] = 0;
+
+  const cells = pack.cells, burg = pack.burgs[id];
+  burg.removed = true;
+  cells.burg[burg.cell] = 0;
 }
 
 function toggleCapital(burg) {
@@ -307,7 +309,7 @@ function createPicker() {
   const contaiter = d3.select("body").append("svg").attr("id", "pickerContainer").attr("width", "100%").attr("height", "100%");
   contaiter.append("rect").attr("x", 0).attr("y", 0).attr("width", "100%").attr("height", "100%").attr("opacity", .2)
     .on("mousemove", cl).on("click", closePicker);
-  const picker = contaiter.append("g").attr("id", "picker").call(d3.drag().on("start", dragPicker));
+  const picker = contaiter.append("g").attr("id", "picker").call(d3.drag().filter(() => event.target.tagName !== "INPUT").on("start", dragPicker));
 
   const controls = picker.append("g").attr("id", "pickerControls");
   const h = controls.append("g");
@@ -345,7 +347,7 @@ function createPicker() {
     <input type="number" id="pickerRGB_G" data-space="rgb" min=0 max=255 value="142">, 
     <input type="number" id="pickerRGB_B" data-space="rgb" min=0 max=255 value="232">
   </label>
-  <label>HEX: <input type="text" id="pickerHEX"  data-space="hex" style="width:42px" autocorrect="off" spellcheck="false" value="#7d8ee8"></label>`;
+  <label>HEX: <input type="text" id="pickerHEX" data-space="hex" style="width:42px" autocorrect="off" spellcheck="false" value="#7d8ee8"></label>`;
   spaces.node().insertAdjacentHTML('beforeend', html);
   spaces.selectAll("input").on("change", changePickerSpace);
 

@@ -64,6 +64,7 @@ function processFeatureRegeneration(event, button) {
   if (button === "regenerateStates") regenerateStates(); else
   if (button === "regenerateProvinces") regenerateProvinces(); else
   if (button === "regenerateReligions") regenerateReligions(); else
+  if (button === "regenerateMilitary") regenerateMilitary(); else
   if (button === "regenerateMarkers") regenerateMarkers(event); else
   if (button === "regenerateZones") regenerateZones(event);
 }
@@ -135,6 +136,7 @@ function regenerateBurgs() {
     moveBurgToGroup(burg, "cities");
   });
 
+  pack.features.forEach(f => {if (f.port) f.port = 0}); // reset features ports counter
   BurgsAndStates.specifyBurgs();
   BurgsAndStates.defineBurgFeatures();
   BurgsAndStates.drawBurgs();
@@ -215,15 +217,18 @@ function regenerateStates() {
   BurgsAndStates.normalizeStates();
   BurgsAndStates.collectStatistics();
   BurgsAndStates.assignColors();
+  BurgsAndStates.generateCampaigns();
   BurgsAndStates.generateDiplomacy();
   BurgsAndStates.defineStateForms();
   BurgsAndStates.generateProvinces(true);
   if (!layerIsOn("toggleStates")) toggleStates(); else drawStates();
   if (!layerIsOn("toggleBorders")) toggleBorders(); else drawBorders();
   BurgsAndStates.drawStateLabels();
+  Military.generate();
 
   if (document.getElementById("burgsOverviewRefresh").offsetParent) burgsOverviewRefresh.click();
   if (document.getElementById("statesEditorRefresh").offsetParent) statesEditorRefresh.click();
+  if (document.getElementById("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
 }
 
 function regenerateProvinces() {
@@ -238,44 +243,38 @@ function regenerateReligions() {
   if (!layerIsOn("toggleReligions")) toggleReligions(); else drawReligions();
 }
 
+function regenerateMilitary() {
+  Military.generate();
+  if (!layerIsOn("toggleMilitary")) toggleMilitary();
+  if (document.getElementById("militaryOverviewRefresh").offsetParent) militaryOverviewRefresh.click();
+}
+
 function regenerateMarkers(event) {
-  let number = gauss(1, .5, .3, 5, 2);
+  if (isCtrlClick(event)) prompt("Please provide markers number multiplier", {default:1, step:.01, min:0, max:100}, v => addNumberOfMarkers(v));
+  else addNumberOfMarkers(gauss(1, .5, .3, 5, 2));
 
-  if (event.ctrlKey) {
-    const numberManual = prompt("Please provide markers number multiplier", 1);
-    if (numberManual === null || numberManual === "" || isNaN(+numberManual)) {
-      tip("The number provided is invalid, please try again and provide a valid number", false, "error", 4000);
-      return;
-    }
+  function addNumberOfMarkers(number) {
+    // remove existing markers and assigned notes
+    markers.selectAll("use").each(function() {
+      const index = notes.findIndex(n => n.id === this.id);
+      if (index != -1) notes.splice(index, 1);
+    }).remove();
 
-    number = Math.min(+numberManual, 100);
+    addMarkers(number);
+    if (!layerIsOn("toggleMarkers")) toggleMarkers();
   }
-
-  // remove existing markers and assigned notes  
-  markers.selectAll("use").each(function() {
-    const index = notes.findIndex(n => n.id === this.id);
-    if (index != -1) notes.splice(index, 1);
-  }).remove();
-
-  addMarkers(number);
 }
 
 function regenerateZones(event) {
-  let number = gauss(1, .5, .6, 5, 2);
+  if (isCtrlClick(event)) prompt("Please provide zones number multiplier", {default:1, step:.01, min:0, max:100}, v => addNumberOfZones(v));
+  else addNumberOfZones(gauss(1, .5, .6, 5, 2));
 
-  if (event.ctrlKey) {
-    const numberManual = prompt("Please provide zones number multiplier", 1);
-    if (numberManual === null || numberManual === "" || isNaN(+numberManual)) {
-      tip("The number provided is invalid, please try again and provide a valid number", false, "error", 4000);
-      return;
-    }
-
-    number = Math.min(+numberManual, 100);
+  function addNumberOfZones(number) {
+    zones.selectAll("g").remove(); // remove existing zones
+    addZones(number);
+    if (document.getElementById("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
+    if (!layerIsOn("toggleZones")) toggleZones();
   }
-
-  zones.selectAll("g").remove(); // remove existing zones
-  addZones(number);
-  if (document.getElementById("zonesEditorRefresh").offsetParent) zonesEditorRefresh.click();
 }
 
 function unpressClickToAddButton() {

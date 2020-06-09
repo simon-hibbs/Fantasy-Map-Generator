@@ -142,13 +142,13 @@ function editCultures() {
     types.forEach(t => options += `<option ${type === t ? "selected" : ""} value="${t}">${t}</option>`);
     return options;
   }
-  
+
   function getBaseOptions(base) {
     let options = "";
     nameBases.forEach((n, i) => options += `<option ${base === i ? "selected" : ""} value="${i}">${n.name}</option>`);
     return options;
   }
- 
+
   function cultureHighlightOn(event) {
     const culture = +event.target.dataset.id;
     const info = document.getElementById("cultureInfo");
@@ -298,18 +298,27 @@ function editCultures() {
   function cultureRemove() {
     if (customization === 4) return;
     const culture = +this.parentNode.dataset.id;
-    cults.select("#culture"+culture).remove();
-    debug.select("#cultureCenter"+culture).remove();
 
-    pack.burgs.filter(b => b.culture == culture).forEach(b => b.culture = 0);
-    pack.states.forEach((s, i) => {if(s.culture === culture) s.culture = 0;});
-    pack.cells.culture.forEach((c, i) => {if(c === culture) pack.cells.culture[i] = 0;});
-    pack.cultures[culture].removed = true;
-
-    const origin = pack.cultures[culture].origin;
-    pack.cultures.forEach(c => {if(c.origin === culture) c.origin = origin;});
-
-    refreshCulturesEditor();
+    alertMessage.innerHTML = "Are you sure you want to remove the culture? <br>This action cannot be reverted";
+    $("#alert").dialog({resizable: false, title: "Remove culture",
+      buttons: {
+        Remove: function() {
+          cults.select("#culture"+culture).remove();
+          debug.select("#cultureCenter"+culture).remove();
+      
+          pack.burgs.filter(b => b.culture == culture).forEach(b => b.culture = 0);
+          pack.states.forEach((s, i) => {if(s.culture === culture) s.culture = 0;});
+          pack.cells.culture.forEach((c, i) => {if(c === culture) pack.cells.culture[i] = 0;});
+          pack.cultures[culture].removed = true;
+      
+          const origin = pack.cultures[culture].origin;
+          pack.cultures.forEach(c => {if(c.origin === culture) c.origin = origin;});
+          refreshCulturesEditor();
+          $(this).dialog("close");
+        },
+        Cancel: function() {$(this).dialog("close");}
+      }
+    });
   }
 
   function drawCultureCenters() {
@@ -420,13 +429,13 @@ function editCultures() {
     }
 
     $("#alert").dialog({
-      title: "Cultures tree", width: fitContent(), resizable: false, 
+      title: "Cultures tree", width: fitContent(), resizable: false,
       position: {my: "left center", at: "left+10 center", of: "svg"}, buttons: {},
       close: () => {alertMessage.innerHTML = "";}
     });
 
     function dragToReorigin(d) {
-      if (d3.event.sourceEvent.ctrlKey) {changeCode(d); return;}
+      if (isCtrlClick(d3.event.sourceEvent)) {changeCode(d); return;}
 
       const originLine = graph.append("path")
         .attr("class", "dragLine").attr("d", `M${d.x},${d.y}L${d.x},${d.y}`);
@@ -451,10 +460,10 @@ function editCultures() {
     }
 
     function changeCode(d) {
-      const code = prompt(`Please provide an abbreviation for culture: ${d.data.name}`, d.data.code);
-      if (!code) return;
-      pack.cultures[d.data.i].code = code;
-      nodes.select("g[data-id='"+d.data.i+"']").select("text").text(code);
+      prompt(`Please provide an abbreviation for culture: ${d.data.name}`, {default:d.data.code}, v => {
+        pack.cultures[d.data.i].code = v;
+        nodes.select("g[data-id='"+d.data.i+"']").select("text").text(v);
+      });
     }
   }
 
@@ -470,8 +479,9 @@ function editCultures() {
     drawCultures();
     pack.burgs.forEach(b => b.culture = pack.cells.culture[b.cell]);
     refreshCulturesEditor();
+    document.querySelector("input.statePower").focus(); // to not trigger hotkeys
   }
-  
+
   function enterCultureManualAssignent() {
     if (!layerIsOn("toggleCultures")) toggleCultures();
     customization = 4;
@@ -521,7 +531,7 @@ function editCultures() {
       if (!d3.event.dx && !d3.event.dy) return;
       const p = d3.mouse(this);
       moveCircle(p[0], p[1], r);
-  
+
       const found = r > 5 ? findAll(p[0], p[1], r) : [findCell(p[0], p[1], r)];
       const selection = found.filter(isLand);
       if (selection) changeCultureForSelection(selection);
@@ -589,7 +599,7 @@ function editCultures() {
     const selected = body.querySelector("div.selected");
     if (selected) selected.classList.remove("selected");
   }
-  
+
   function enterAddCulturesMode() {
     if (this.classList.contains("pressed")) {exitAddCultureMode(); return;};
     customization = 9;
@@ -624,7 +634,7 @@ function editCultures() {
   function downloadCulturesData() {
     const unit = areaUnit.value === "square" ? distanceUnitInput.value + "2" : areaUnit.value;
     let data = "Id,Culture,Color,Cells,Expansionism,Type,Area "+unit+",Population,Namesbase\n"; // headers
-    
+
     body.querySelectorAll(":scope > div").forEach(function(el) {
       data += el.dataset.id + ",";
       data += el.dataset.name + ",";

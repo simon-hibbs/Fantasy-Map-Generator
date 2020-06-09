@@ -293,15 +293,26 @@ function editReligions() {
   function religionRemove() {
     if (customization) return;
     const religion = +this.parentNode.dataset.id;
-    relig.select("#religion"+religion).remove();
-    debug.select("#religionsCenter"+religion).remove();
 
-    pack.cells.religion.forEach((r, i) => {if(r === religion) pack.cells.religion[i] = 0;});
-    pack.religions[religion].removed = true;
-    const origin = pack.religions[religion].origin;
-    pack.religions.forEach(r => {if(r.origin === religion) r.origin = origin;});
+    alertMessage.innerHTML = "Are you sure you want to remove the religion? <br>This action cannot be reverted";
+    $("#alert").dialog({resizable: false, title: "Remove religion",
+      buttons: {
+        Remove: function() {
+          relig.select("#religion"+religion).remove();
+          relig.select("#religion-gap"+religion).remove();
+          debug.select("#religionsCenter"+religion).remove();
 
-    refreshReligionsEditor();
+          pack.cells.religion.forEach((r, i) => {if(r === religion) pack.cells.religion[i] = 0;});
+          pack.religions[religion].removed = true;
+          const origin = pack.religions[religion].origin;
+          pack.religions.forEach(r => {if(r.origin === religion) r.origin = origin;});
+      
+          refreshReligionsEditor();
+          $(this).dialog("close");
+        },
+        Cancel: function() {$(this).dialog("close");}
+      }
+    });
   }
 
   function drawReligionCenters() {
@@ -414,7 +425,7 @@ function editReligions() {
     });
 
     function dragToReorigin(d) {
-      if (d3.event.sourceEvent.ctrlKey) {changeCode(d); return;}
+      if (isCtrlClick(d3.event.sourceEvent)) {changeCode(d); return;}
 
       const originLine = graph.append("path")
         .attr("class", "dragLine").attr("d", `M${d.x},${d.y}L${d.x},${d.y}`);
@@ -439,10 +450,10 @@ function editReligions() {
     }
 
     function changeCode(d) {
-      const code = prompt(`Please provide an abbreviation for ${d.data.name}`, d.data.code);
-      if (!code) return;
-      pack.religions[d.data.i].code = code;
-      nodes.select("g[data-id='"+d.data.i+"']").select("text").text(code);
+      prompt(`Please provide an abbreviation for ${d.data.name}`, {default:d.data.code}, v => {
+        pack.religions[d.data.i].code = v;
+        nodes.select("g[data-id='"+d.data.i+"']").select("text").text(v);
+      });
     }
   }
 

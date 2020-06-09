@@ -3,8 +3,8 @@
 
 function editHeightmap() {
   void function selectEditMode() {
-    alertMessage.innerHTML = `<p>Heightmap is a core element on which all other data (rivers, burgs, states etc) is based.
-      So the best edit approach is to <i>erase</i> the secondary data and let the system automatically regenerate it on edit completion.</p> 
+    alertMessage.innerHTML = `<span>Heightmap is a core element on which all other data (rivers, burgs, states etc) is based.
+      So the best edit approach is to <i>erase</i> the secondary data and let the system automatically regenerate it on edit completion.</span> 
       <p>You can also <i>keep</i> all the data, but you won't be able to change the coastline.</p>
       <p>If you need to change the coastline and keep the data, you may try the <i>risk</i> edit option. 
       The data will be restored as much as possible, but the coastline change can cause unexpected fluctuations and errors.</p>
@@ -100,7 +100,7 @@ function editHeightmap() {
     if (tooltip.dataset.main) showMainTip();
 
     // move radius circle if drag mode is active
-    const pressed = document.querySelector("#brushesButtons > button.pressed");
+    const pressed = document.getElementById("brushesButtons").querySelector("button.pressed");
     if (!pressed) return;
     moveCircle(p[0], p[1], brushRadius.valueAsNumber, "#333");
   }
@@ -126,10 +126,14 @@ function editHeightmap() {
       return;
     }
 
+    if (document.getElementById("imageConverter").offsetParent) {
+      tip("Please exit the Image Conversion mode first", null, "error");
+      return;
+    }
+
     customization = 0;
     customizationMenu.style.display = "none";
-    if (options.querySelector(".tab > button.active").id === "toolsTab")
-      toolsContent.style.display = "block";
+    if (document.getElementById("options").querySelector(".tab > button.active").id === "toolsTab") toolsContent.style.display = "block";
     layersPreset.disabled = false;
     exitCustomization.style.display = "none"; // hide finalize button
     restoreDefaultEvents();
@@ -147,7 +151,8 @@ function editHeightmap() {
     else if (mode === "risk") restoreRiskedData();
 
     // restore initial layers
-    viewbox.select("#heights").remove();
+    //viewbox.select("#heights").remove();
+    document.getElementById("heights").remove();
     turnButtonOff("toggleHeight");
     document.getElementById("mapLayers").querySelectorAll("li").forEach(function(e) {
       if (editHeightmap.layers.includes(e.id) && !layerIsOn(e.id)) e.click(); // turn on
@@ -195,6 +200,7 @@ function editHeightmap() {
     BurgsAndStates.drawStateLabels();
 
     Rivers.specify();
+    Military.generate();
     addMarkers();
     addZones();
     console.timeEnd("regenerateErasedData");
@@ -307,10 +313,11 @@ function editHeightmap() {
 
     for (const i of pack.cells.i) {
       const g = pack.cells.g[i];
+      if (pack.features[pack.cells.f[i]].group === "freshwater") pack.cells.h[i] = 19; // de-elevate lakes
       const land = pack.cells.h[i] >= 20;
 
       // check biome
-      if (land && !biome[g]) pack.cells.biome[i] = getBiomeId(grid.cells.prec[g], grid.cells.temp[g]);
+      if (!biome[g]) pack.cells.biome[i] = getBiomeId(grid.cells.prec[g], grid.cells.temp[g]);
       else if (!land && biome[g]) pack.cells.biome[i] = 0;
       else pack.cells.biome[i] = biome[g];
 
@@ -710,12 +717,13 @@ function editHeightmap() {
 
     function setRange(event) {
       if (event.target.value !== "interval") return;
-      const interval = prompt("Set a height interval. E.g. '17-20'. Avoid space, use hyphen as a separator");
-      if (!interval || interval === "") return;
-      const opt = document.createElement("option");
-      opt.value = opt.innerHTML = interval;
-      event.target.add(opt);
-      event.target.value = interval;
+
+      prompt("Set a height interval. Avoid space, use hyphen as a separator", {default:"17-20"}, v => {
+        const opt = document.createElement("option");
+        opt.value = opt.innerHTML = v;
+        event.target.add(opt);
+        event.target.value = v;
+      });
     }
 
     function selectTemplate(e) {
@@ -958,8 +966,9 @@ function editHeightmap() {
 
     $("#imageConverter").dialog({
       title: "Image Converter", minHeight: "auto", width: "19.5em", resizable: false,
-      position: {my: "right top", at: "right-10 top+10", of: "svg"}
-    }).on('dialogclose', closeImageConverter);
+      position: {my: "right top", at: "right-10 top+10", of: "svg"},
+      beforeClose: closeImageConverter
+    });
 
     // create canvas for image
     const canvas = document.createElement("canvas");
@@ -976,7 +985,7 @@ function editHeightmap() {
     setOverlayOpacity(0);
 
     document.getElementById("convertImageLoad").classList.add("glow"); // add glow effect
-    tip('Image Converter is opened. Upload the image and assign the colors to desired heights', true, "warn"); // main tip
+    tip('Image Converter is opened. Upload the image and assign the height for each of the colors', true, "warn"); // main tip
 
     // remove all heights
     grid.cells.h = new Uint8Array(grid.cells.i.length);
@@ -1001,7 +1010,8 @@ function editHeightmap() {
     document.getElementById("convertAutoLum").addEventListener("click", () => autoAssing("lum"));
     document.getElementById("convertAutoHue").addEventListener("click", () => autoAssing("hue"));
     document.getElementById("convertColorsButton").addEventListener("click", setConvertColorsNumber);
-    document.getElementById("convertComplete").addEventListener("click", () => $("#imageConverter").dialog("close"));
+    document.getElementById("convertComplete").addEventListener("click", applyConversion);
+    document.getElementById("convertCancel").addEventListener("click", cancelConversion);
     document.getElementById("convertOverlay").addEventListener("input", function() {setOverlayOpacity(this.value)});
     document.getElementById("convertOverlayNumber").addEventListener("input", function() {setOverlayOpacity(this.value)});
 
@@ -1156,11 +1166,11 @@ function editHeightmap() {
     }
 
     function setConvertColorsNumber() {
-      const text = "Please provide a desired number of colors. Min value is 3, max is 255. An actual number depends on color scheme and may vary from desired number";
-      const number = Math.max(Math.min(+prompt(text, convertColors.value), 255), 3);
-      if (Number.isNaN(number)) {tip("The number should be an integer", false, "error"); return;}
-      convertColors.value = number;
-      heightsFromImage(number);
+      prompt(`Please provide a desired number of colors. <br>An actual number depends on color scheme and may vary from desired`, 
+      {default:convertColors.value, step:1, min:3, max:255}, number => {
+        convertColors.value = number;
+        heightsFromImage(number);
+      });
     }
 
     function setOverlayOpacity(v) {
@@ -1168,7 +1178,25 @@ function editHeightmap() {
       document.getElementById("canvas").style.opacity = v;
     }
 
-    function closeImageConverter() {
+    function applyConversion() {
+      viewbox.select("#heights").selectAll("polygon").each(function() {
+        const height = +this.dataset.height || 0;
+        const i = +this.id.slice(4);
+        grid.cells.h[i] = height;
+      });
+
+      viewbox.select("#heights").selectAll("polygon").remove();
+      updateHeightmap();
+      restoreImageConverterState();
+    }
+
+    function cancelConversion() {
+      restoreImageConverterState();
+      viewbox.select("#heights").selectAll("polygon").remove();
+      restoreHistory(edits.n-1);
+    }
+
+    function restoreImageConverterState() {
       const canvas = document.getElementById("canvas");
       if (canvas) canvas.remove(); else return;
       const img = document.getElementById("image");
@@ -1180,15 +1208,30 @@ function editHeightmap() {
       colorsSelectValue.innerHTML = colorsSelectFriendly.innerHTML = 0;
       viewbox.style("cursor", "default").on(".drag", null);
       tip('Heightmap edit mode is active. Click on "Exit Customization" to finalize the heightmap', true);
+      $("#imageConverter").dialog("destroy");
+    }
 
-      viewbox.select("#heights").selectAll("polygon").each(function() {
-        const height = +this.dataset.height || 0;
-        const i = +this.id.slice(4);
-        grid.cells.h[i] = height;
+    function closeImageConverter(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      alertMessage.innerHTML = 'Are you sure you want to close the Image Converter? Click "Cancel" to geck back to convertion. Click "Complete" to apply the conversion. Click "Close" to exit conversion mode and restore previous heightmap';
+      $("#alert").dialog({resizable: false, title: "Close Image Converter",
+        buttons: {
+          Cancel: function() {
+            $(this).dialog("close");
+          },
+          Complete: function() {
+            $(this).dialog("close");
+            applyConversion();
+          },
+          Close: function() {
+            $(this).dialog("close");
+            restoreImageConverterState();
+            viewbox.select("#heights").selectAll("polygon").remove();
+            restoreHistory(edits.n-1);
+          }
+        }
       });
-
-      viewbox.select("#heights").selectAll("polygon").remove();
-      updateHeightmap();
     }
   }
 

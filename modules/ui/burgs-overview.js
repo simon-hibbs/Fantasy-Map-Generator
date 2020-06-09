@@ -112,7 +112,7 @@ function overviewBurgs() {
 
   function getCultureOptions(culture) {
     let options = "";
-    pack.cultures.forEach(c => options += `<option ${c.i === culture ? "selected" : ""} value="${c.i}">${c.name}</option>`);
+    pack.cultures.filter(c => !c.removed).forEach(c => options += `<option ${c.i === culture ? "selected" : ""} value="${c.i}">${c.name}</option>`);
     return options;
   }
 
@@ -303,7 +303,7 @@ function overviewBurgs() {
       burgHighlightOff(ev);
       if (!document.getElementById("burgsInfo")) return;
       burgsInfo.innerHTML = "&#8205;";
-      d3.select(ev.target).transition().attr("stroke", "null");
+      d3.select(ev.target).transition().attr("stroke", null);
       tip("");
     }
 
@@ -344,8 +344,8 @@ function overviewBurgs() {
         if (this.value === "provinces") return d.province;
       }
 
-      const base = this.value === "states" ? getStatesData() 
-        : this.value === "cultures" ? getCulturesData() 
+      const base = this.value === "states" ? getStatesData()
+        : this.value === "cultures" ? getCulturesData()
         : this.value === "parent" ? getParentData() : getProvincesData();
       burgs.forEach(b => b.id = b.i+base.length-1);
 
@@ -401,7 +401,7 @@ function overviewBurgs() {
   }
 
   function renameBurgsInBulk() {
-    const message = `Download burgs list as a text file, make changes and re-upload the file. 
+    const message = `Download burgs list as a text file, make changes and re-upload the file.
     If you do not want to change the name, just leave it as is`;
     alertMessage.innerHTML = message;
 
