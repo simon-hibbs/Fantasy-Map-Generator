@@ -56,7 +56,7 @@
         //const min = cells.c[i][d3.scan(cells.c[i], (a, b) => h[a] - h[b])]; // downhill cell
         let min = cells.c[i][d3.scan(cells.c[i], (a, b) => h[a] - h[b])]; // downhill cell
 
-        // allow only one river can flow thought a lake
+        // allow only one river can flow through a lake
         const cf = features[cells.f[i]]; // current cell feature
         if (cf.river && cf.river !== cells.r[i]) {
           cells.fl[i] = 0;
@@ -271,10 +271,14 @@
 
   // remove river and all its tributaries
   const remove = function(id) {
+    const cells = pack.cells;
     const riversToRemove = pack.rivers.filter(r => r.i === id || getBasin(r.i, r.parent, id) === id).map(r => r.i);
     riversToRemove.forEach(r => rivers.select("#river"+r).remove());
-    pack.cells.r.forEach((r, i) => {
-      if (r && riversToRemove.includes(r)) pack.cells.r[i] = 0;
+    cells.r.forEach((r, i) => {
+      if (!r || !riversToRemove.includes(r)) return;
+      cells.r[i] = 0;
+      cells.fl[i] = grid.cells.prec[cells.g[i]];
+      cells.conf[i] = 0;
     });
     pack.rivers = pack.rivers.filter(r => !riversToRemove.includes(r.i));
   }

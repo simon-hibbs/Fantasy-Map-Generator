@@ -69,18 +69,11 @@ document.getElementById("options").querySelector("div.tab").addEventListener("cl
   if (id === "aboutTab") aboutContent.style.display = "block";
 });
 
-document.getElementById("options").querySelectorAll("i.collapsible").forEach(el => el.addEventListener("click", collapse));
-function collapse(e) {
-  const trigger = e.target;
-  const section = trigger.parentElement.nextElementSibling;
-
-  if (section.style.display === "none") {
-    section.style.display = "block";
-    trigger.classList.replace("icon-down-open", "icon-up-open");
-  } else {
-    section.style.display = "none";
-    trigger.classList.replace("icon-up-open", "icon-down-open");
-  }
+// show popup with a list of Patreon supportes (updated manually, to be replaced with API call)
+function showSupporters() {
+  const supporters = "Aaron Meyer, Ahmad Amerih, AstralJacks, aymeric, Billy Dean Goehring, Branndon Edwards, Chase Mayers, Curt Flood, cyninge, Dino Princip, E.M. White, es, Fondue, Fritjof Olsson, Gatsu, Johan Fröberg, Jonathan Moore, Joseph Miranda, Kate, KC138, Luke Nelson, Markus Finster, Massimo Vella, Mikey, Nathan Mitchell, Paavi1, Pat, Ryan Westcott, Sasquatch, Shawn Spencer, Sizz_TV, Timothée CALLET, UTG community, Vlad Tomash, Wil Sisney, William Merriott, Xariun, Gun Metal Games, Scott Marner, Spencer Sherman, Valerii Matskevych, Alloyed Clavicle, Stewart Walsh, Ruthlyn Mollett (Javan), Benjamin Mair-Pratt, Diagonath, Alexander Thomas, Ashley Wilson-Savoury, William Henry, Preston Brooks, JOSHUA QUALTIERI, Hilton Williams, Katharina Haase, Hisham Bedri, Ian arless, Karnat, Bird, Kevin, Jessica Thomas, Steve Hyatt, Logicspren, Alfred García, Jonathan Killstring, John Ackley, Invad3r233, Norbert Žigmund, Jennifer, PoliticsBuff, _gfx_, Maggie, Connor McMartin, Jared McDaris, BlastWind, Franc Casanova Ferrer, Dead & Devil, Michael Carmody, Valerie Elise, naikibens220, Jordon Phillips, William Pucs, The Dungeon Masters, Brady R Rathbun, J, Shadow, Matthew Tiffany, Huw Williams, Joseph Hamilton, FlippantFeline, Tamashi Toh, kms, Stephen Herron, MidnightMoon, Whakomatic x, Barished, Aaron bateson, Brice Moss, Diklyquill, PatronUser, Michael Greiner, Steven Bennett, Jacob Harrington, Miguel C., Reya C., Giant Monster Games, Noirbard, Brian Drennen, Ben Craigie, Alex Smolin, Endwords, Joshua E Goodwin, SirTobit , Allen S. Rout, Allen Bull Bear, Pippa Mitchell, R K, G0atfather, Ryan Lege, Caner Oleas Pekgönenç, Bradley Edwards, Tertiary , Austin Miller, Jesse Holmes, Jan Dvořák, Marten F, Erin D. Smale, Maxwell Hill, Drunken_Legends, rob bee, Jesse Holmes, YYako, Detocroix, Anoplexian, Hannah, Paul, Sandra Krohn, Lucid, Richard Keating, Allen Varney, Rick Falkvinge, Seth Fusion, Adam Butler, Gus, StroboWolf, Sadie Blackthorne, Zewen Senpai";
+  alertMessage.innerHTML = "<ul style='column-count: 3; column-gap: 2em'>" + supporters.split(", ").sort().map(n => `<li>${n}</li>`).join("") + "</ul>";
+  $("#alert").dialog({resizable: false, title: "Patreon Supporters", width: "30vw", position: {my: "center", at: "center", of: "svg"}});
 }
 
 // Option listeners
@@ -116,6 +109,8 @@ optionsContent.addEventListener("change", function(event) {
   if (id === "zoomExtentMin" || id === "zoomExtentMax") changeZoomExtent(value);
   else if (id === "optionsSeed") generateMapWithSeed();
   else if (id === "uiSizeInput") changeUIsize(value);
+  else if (id === "yearInput") changeYear();
+  else if (id === "eraInput") changeEra();
 });
 
 optionsContent.addEventListener("click", function(event) {
@@ -124,7 +119,9 @@ optionsContent.addEventListener("click", function(event) {
   else if (id === "optionsSeedGenerate") generateMapWithSeed();
   else if (id === "optionsMapHistory") showSeedHistoryDialog();
   else if (id === "optionsCopySeed") copyMapURL();
+  else if (id === "optionsEraRegenerate") regenerateEra();
   else if (id === "zoomExtentDefault") restoreDefaultZoomExtent();
+  else if (id === "translateExtent") toggleTranslateExtent(event.target);
 });
 
 function mapSizeInputChange() {
@@ -145,7 +142,6 @@ function changeMapSize() {
   landmass.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
   oceanPattern.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
   oceanLayers.select("rect").attr("x", 0).attr("y", 0).attr("width", maxWidth).attr("height", maxHeight);
-  //defs.select("#mapClip > rect").attr("width", maxWidth).attr("height", maxHeight);
 
   fitScaleBar();
   if (window.fitLegendBox) fitLegendBox();
@@ -159,10 +155,7 @@ function applyMapSize() {
   svgWidth = Math.min(graphWidth, window.innerWidth);
   svgHeight = Math.min(graphHeight, window.innerHeight);
   svg.attr("width", svgWidth).attr("height", svgHeight);
-  zoom.translateExtent([[0, 0],[graphWidth, graphHeight]]).scaleExtent([zoomMin, zoomMax]).scaleTo(svg, zoomMin);
-  //viewbox.attr("transform", null).attr("clip-path", "url(#mapClip)");
-  //defs.append("clipPath").attr("id", "mapClip").append("rect").attr("x", 0).attr("y", 0).attr("width", graphWidth).attr("height", graphHeight);
-  //zoom.translateExtent([[-svgWidth*.2, -graphHeight*.2], [svgWidth*1.2, graphHeight*1.2]]);
+  zoom.translateExtent([[0, 0], [graphWidth, graphHeight]]).scaleExtent([zoomMin, zoomMax]).scaleTo(svg, zoomMin);
 }
 
 function toggleFullscreen() {
@@ -176,6 +169,12 @@ function toggleFullscreen() {
     mapHeightInput.value = graphHeight;
   }
   changeMapSize();
+}
+
+function toggleTranslateExtent(el) {
+  const on = el.dataset.on = +!(+el.dataset.on);
+  if (on) zoom.translateExtent([[-graphWidth/2, -graphHeight/2], [graphWidth*1.5, graphHeight*1.5]]);
+  else zoom.translateExtent([[0, 0], [graphWidth, graphHeight]]);
 }
 
 function generateMapWithSeed() {
@@ -358,6 +357,9 @@ function randomizeOptions() {
   if (!stored("distanceUnit")) distanceUnitInput.value = US || UK ? "mi" : "km";
   if (!stored("heightUnit")) heightUnit.value = US || UK ? "ft" : "m";
   if (!stored("temperatureScale")) temperatureScale.value = US ? "°F" : "°C";
+
+  // World settings
+  generateEra();
 }
 
 // select heightmap template pseudo-randomly
@@ -391,6 +393,33 @@ function randomizeCultureSet() {
     "random":      2};
   culturesSet.value = rw(sets);
   changeCultureSet();
+}
+
+// generate current year and era name
+function generateEra() {
+  if (!stored("year")) yearInput.value = rand(100, 2000); // current year
+  if (!stored("era")) eraInput.value = Names.getBaseShort(P(.7) ? 1 : rand(nameBases.length)) + " Era";
+  options.year = +yearInput.value;
+  options.era = eraInput.value;
+  options.eraShort = options.era.split(" ").map(w => w[0].toUpperCase()).join(""); // short name for era
+}
+
+function regenerateEra() {
+  unlock("era");
+  options.era = eraInput.value = Names.getBaseShort(P(.7) ? 1 : rand(nameBases.length)) + " Era";
+  options.eraShort = options.era.split(" ").map(w => w[0].toUpperCase()).join("");
+}
+
+function changeYear() {
+  if (!yearInput.value) return;
+  if (isNaN(+yearInput.value)) {tip("Current year should be a number", false, "error"); return;}
+  options.year = +yearInput.value;
+}
+
+function changeEra() {
+  if (!eraInput.value) return;
+  lock("era");
+  options.era = eraInput.value;
 }
 
 // remove all saved data from LocalStorage and reload the page
